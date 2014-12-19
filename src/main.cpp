@@ -15,19 +15,100 @@
  * limitations under the License.
  */
 
+#include <xercesc/parsers/XercesDOMParser.hpp>
+#include <xercesc/dom/DOM.hpp>
+#include <xercesc/sax/HandlerBase.hpp>
+#include <xercesc/util/XMLString.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
 
+#include <iostream>
+
+using namespace std;
 using namespace xercesc;
+
+void f();
+void f()
+{
+	cout << "A quick brown fox..." << endl;
+}
 
 int main(int argc, char* argv[])
 {
-	try {
-		XMLPlatformUtils::Initialize();
-	}
-	catch (const XMLException& toCatch) {
-		// bad init
-		return 1;
-	}
-	XMLPlatformUtils::Terminate();
-	return 0;
+    if (argc <= 1)
+    {
+        cout << "Usage: " << argv[0] << " <xml file>" << endl;
+        return 1;
+    }
+
+    try
+    {
+        XMLPlatformUtils::Initialize();
+    }
+    catch (const XMLException& toCatch)
+    {
+        char *message = XMLString::transcode(toCatch.getMessage());
+        cout << "Error during initialization! :\n"
+             << message << endl;
+        XMLString::release(&message);
+        return 1;
+    }
+
+    XercesDOMParser *parser = new XercesDOMParser();
+    parser->setValidationScheme(XercesDOMParser::Val_Always);
+    parser->setDoNamespaces(true);    // optional
+
+    ErrorHandler *errHandler = (ErrorHandler*) new HandlerBase();
+    parser->setErrorHandler(errHandler);
+
+    char *xmlFile = argv[1];
+
+    try
+    {
+        parser->parse(xmlFile);
+    }
+    catch (const XMLException& toCatch)
+    {
+        char *message = XMLString::transcode(toCatch.getMessage());
+        cout << "Exception message is:" << endl
+             << message << endl;
+        XMLString::release(&message);
+        return -1;
+    }
+    catch (const DOMException& toCatch)
+    {
+        char *message = XMLString::transcode(toCatch.msg);
+        cout << "Exception message is:" << endl
+             << message << endl;
+        XMLString::release(&message);
+        return -1;
+    }
+    catch (...)
+    {
+        cout << "Unexpected Exception" << endl ;
+        return -1;
+    }
+
+    DOMDocument *document = parser->getDocument();
+
+    XMLCh *bb = XMLString::transcode("black-book");
+	XMLCh *fname = XMLString::transcode("f");
+
+	DOMNode *bbNode = document->getElementsByTagName(bb)->item(0);
+	bbNode->setUserData(fname, (void *)f, NULL);
+    char *tc = XMLString::transcode(bbNode->getTextContent());
+    cout <<  tc << endl;
+
+	((void (*)())(bbNode->getUserData(fname)))(); // call f() from user data
+
+    XMLString::release(&bb);
+    XMLString::release(&tc);
+	XMLString::release(&fname);
+
+    cout << "Parsed!" << endl;
+
+    delete parser;
+    delete errHandler;
+
+    XMLPlatformUtils::Terminate();
+    return 0;
 }
