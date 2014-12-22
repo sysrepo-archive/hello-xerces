@@ -10,6 +10,10 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 SET(SOURCES
 	src/main.cpp
+	src/datastore.h
+	src/datastore.cpp
+	src/dsnode.h
+	src/dsnode.cpp
 )
 
 ADD_EXECUTABLE(hello-xerces ${SOURCES})
